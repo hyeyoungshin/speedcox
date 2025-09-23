@@ -97,3 +97,9 @@ For best GPS accuracy, ensure clear sky view
 
 ### Advantage over Speedcoach
 The app now provides a complete rowing training companion with professional-grade features that rival dedicated hardware speedcoaches, but with the added benefit of detailed workout logging and intelligent audio feedback!
+
+
+## Deployment
+- Progressive Web App (PWA)
+
+- Native App Stores

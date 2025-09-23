@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1e3c72">
+    <meta name="description" content="Professional rowing speedcoach with GPS tracking, stroke detection, and audio feedback">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <title>Rowing Speedcoach</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+        
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #ff4444;
+            animation: pulse 2s infinite;
+        }
+        
+        .status-dot.active {
+            background: #44ff44;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .metric-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .btn-start {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .btn-start:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4);
+        }
+        
+        .btn-stop {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+        
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+        
+        .btn-reset {
+            background: linear-gradient(45deg, #6c757d, #545b62);
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        
+        .settings {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .settings h3 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .setting-row label {
+            font-weight: bold;
+        }
+        
+        .setting-row input, .setting-row select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 120px;
+        }
+        
+        .setting-row input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .workout-summary {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .workout-summary h3 {
+            margin-bottom: 15px;
+            color: #ffd700;
+        }
+        
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+        
+        .summary-stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .summary-stat .label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        .summary-stat .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        
+        .history-item {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 4px solid #ffd700;
+        }
+        
+        .history-item h4 {
+            color: #ffd700;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+        
+        .history-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9em;
+        }
+        
+        .history-stat {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .delete-workout {
+            float: right;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚣 Speedcoach</h1>
+        
+        <div class="status-indicator">
+            <div class="status-dot" id="gpsStatus"></div>
+            <span id="gpsStatusText">GPS: Waiting...</span>
+        </div>
+        
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="metric-label">Stroke Rate</div>
+                <div class="metric-value" id="strokeRate">--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Split (500m)</div>
+                <div class="metric-value" id="split">--:--</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Distance</div>
+                <div class="metric-value" id="distance">0m</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-label">Time</div>
+                <div class="metric-value" id="elapsedTime">0:00</div>
+            </div>
+        </div>
+        
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn" onclick="startWorkout()">Start</button>
+            <button class="btn btn-stop" id="stopBtn" onclick="stopWorkout()">Stop</button>
+            <button class="btn btn-reset" onclick="resetWorkout()">Reset</button>
+        </div>
+        
+        <div class="controls">
+            <button class="btn" style="background: linear-gradient(45deg, #6f42c1, #563d7c);" onclick="showWorkoutHistory()">View History</button>
+        </div>
+        
+        <div class="settings">
+            <h3>Audio Settings</h3>
+            <div class="setting-row">
+                <label>Announce Stroke Rate:</label>
+                <select id="strokeRateInterval">
+                    <option value="0">Off</option>
+                    <option value="30" selected>Every 30s</option>
+                    <option value="60">Every 1 min</option>
+                    <option value="120">Every 2 min</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Announce Split:</label>
+                <select id="splitInterval">
+                    <option value="0">Off</option>
+                    <option value="60">Every 1 min</option>
+                    <option value="120" selected>Every 2 min</option>
+                    <option value="300">Every 5 min</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Rate Change Alert:</label>
+                <select id="strokeRateChange">
+                    <option value="0">Off</option>
+                    <option value="2">±2 SPM change</option>
+                    <option value="3" selected>±3 SPM change</option>
+                    <option value="5">±5 SPM change</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Voice Speed:</label>
+                <select id="voiceSpeed">
+                    <option value="0.8">Slow</option>
+                    <option value="1.0" selected>Normal</option>
+                    <option value="1.2">Fast</option>
+                </select>
+            </div>
+            <div class="setting-row">
+                <label>Motion Sensors:</label>
+                <button class="btn" style="width: 120px; padding: 5px 10px; font-size: 0.9em;" onclick="requestMotionPermission()">
+                    Enable
+                </button>
+            </div>
+        </div>
+        
+        <div class="workout-summary" id="workoutSummary" style="display: none;">
+            <h3>Workout Summary</h3>
+            <div class="summary-stats">
+                <div class="summary-stat">
+                    <div class="label">Total Distance</div>
+                    <div class="value" id="summaryDistance">0m</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Total Time</div>
+                    <div class="value" id="summaryTime">0:00</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Avg Split</div>
+                    <div class="value" id="summaryAvgSplit">--:--</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Avg Stroke Rate</div>
+                    <div class="value" id="summaryAvgStrokeRate">--</div>
+                </div>
+            </div>
+            <div class="controls" style="margin-top: 15px;">
+                <button class="btn" style="background: linear-gradient(45deg, #28a745, #20c997);" onclick="saveWorkout()">Save Workout</button>
+            </div>
+        </div>
+        
+        <div class="workout-summary" id="workoutHistory" style="display: none;">
+            <h3>Workout History</h3>
+            <div id="historyList" style="max-height: 400px; overflow-y: auto;">
+                <!-- History items will be populated here -->
+            </div>
+            <div class="controls" style="margin-top: 15px;">
+                <button class="btn btn-reset" onclick="hideWorkoutHistory()">Close</button>
+                <button class="btn" style="background: linear-gradient(45deg, #dc3545, #c82333);" onclick="clearHistory()">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // App state
+        let isRunning = false;
+        let startTime = null;
+        let totalDistance = 0;
+        let lastPosition = null;
+        let strokeCount = 0;
+        let lastStrokeTime = 0;
+        let strokeTimes = [];
+        let speedHistory = [];
+        let watchId = null;
+        
+        // Motion detection
+        let motionPermission = false;
+        let accelerationHistory = [];
+        let lastStrokeDetection = 0;
+        let currentStrokeRate = 0;
+        
+        // Audio settings
+        let lastStrokeRateAnnounce = 0;
+        let lastSplitAnnounce = 0;
+        let lastAnnouncedStrokeRate = 0;
+        
+        // Workout persistence
+        let workoutHistory = JSON.parse(localStorage.getItem('rowingWorkouts') || '[]');
+        let currentWorkoutData = {
+            id: null,
+            startTime: null,
+            endTime: null,
+            totalDistance: 0,
+            strokeData: [],
+            splitData: [],
+            gpsData: []
+        };
+        
+        // Elements
+        const gpsStatus = document.getElementById('gpsStatus');
+        const gpsStatusText = document.getElementById('gpsStatusText');
+        const strokeRateEl = document.getElementById('strokeRate');
+        const splitEl = document.getElementById('split');
+        const distanceEl = document.getElementById('distance');
+        const elapsedTimeEl = document.getElementById('elapsedTime');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        
+        // Initialize GPS and Motion Sensors
+        initializeSensors();
+        
+        async function initializeSensors() {
+            // Initialize GPS
+            if ('geolocation' in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        gpsStatus.classList.add('active');
+                        gpsStatusText.textContent = 'GPS: Ready';
+                    },
+                    (error) => {
+                        gpsStatusText.textContent = 'GPS: Error - ' + error.message;
+                    }
+                );
+            } else {
+                gpsStatusText.textContent = 'GPS: Not supported';
+            }
+            
+            // Initialize motion sensors
+            await requestMotionPermission();
+        }
+        
+        async function requestMotionPermission() {
+            try {
+                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                    // iOS 13+ requires permission
+                    const permission = await DeviceMotionEvent.requestPermission();
+                    if (permission === 'granted') {
+                        motionPermission = true;
+                        setupMotionListeners();
+                        console.log('Motion permission granted');
+                    } else {
+                        console.log('Motion permission denied');
+                    }
+                } else if ('DeviceMotionEvent' in window) {
+                    // Android and older iOS
+                    motionPermission = true;
+                    setupMotionListeners();
+                    console.log('Motion sensors available');
+                } else {
+                    console.log('Motion sensors not supported');
+                }
+            } catch (error) {
+                console.log('Error requesting motion permission:', error);
+            }
+        }
+        
+        function setupMotionListeners() {
+            window.addEventListener('devicemotion', handleDeviceMotion);
+        }
+        
+        function handleDeviceMotion(event) {
+            if (!isRunning || !motionPermission) return;
+            
+            const acceleration = event.accelerationIncludingGravity;
+            if (!acceleration || !acceleration.x) return;
+            
+            const timestamp = Date.now();
+            const magnitude = Math.sqrt(
+                Math.pow(acceleration.x || 0, 2) +
+                Math.pow(acceleration.y || 0, 2) +
+                Math.pow(acceleration.z || 0, 2)
+            );
+            
+            accelerationHistory.push({ magnitude, timestamp });
+            
+            // Keep only last 10 seconds of data
+            const cutoff = timestamp - 10000;
+            accelerationHistory = accelerationHistory.filter(a => a.timestamp > cutoff);
+            
+            // Detect strokes
+            detectStroke(magnitude, timestamp);
+        }
+        
+        function detectStroke(magnitude, timestamp) {
+            // Simple stroke detection: look for peaks in acceleration
+            if (accelerationHistory.length < 20) return;
+            
+            const recentData = accelerationHistory.slice(-20);
+            const avgMagnitude = recentData.reduce((sum, a) => sum + a.magnitude, 0) / recentData.length;
+            const threshold = avgMagnitude + 2; // Adjust sensitivity
+            
+            // Detect stroke if current magnitude is significantly higher than average
+            // and enough time has passed since last stroke (prevent double counting)
+            if (magnitude > threshold && timestamp - lastStrokeDetection > 800) {
+                strokeCount++;
+                lastStrokeDetection = timestamp;
+                
+                // Calculate stroke rate (strokes per minute)
+                const strokesInLastMinute = accelerationHistory.filter(
+                    a => a.timestamp > timestamp - 60000 && 
+                    a.magnitude > (avgMagnitude + 1.5)
+                ).length;
+                
+                currentStrokeRate = Math.min(strokesInLastMinute * 2, 40); // Cap at reasonable max
+                
+                // Store stroke data for workout history
+                currentWorkoutData.strokeData.push({
+                    rate: currentStrokeRate,
+                    timestamp: timestamp
+                });
+                
+                // Store for averaging
+                strokeTimes.push({ rate: currentStrokeRate, timestamp: timestamp });
+                
+                // Keep only last 2 minutes of stroke data
+                const strokeCutoff = timestamp - 120000;
+                strokeTimes = strokeTimes.filter(s => s.timestamp > strokeCutoff);
+                
+                console.log('Stroke detected! Rate:', currentStrokeRate);
+            }
+        }
+        
+        function startWorkout() {
+            if (isRunning) return;
+            
+            isRunning = true;
+            startTime = Date.now();
+            lastStrokeRateAnnounce = 0;
+            lastSplitAnnounce = 0;
+            lastAnnouncedStrokeRate = 0;
+            
+            // Initialize current workout data
+            currentWorkoutData = {
+                id: Date.now(),
+                startTime: startTime,
+                endTime: null,
+                totalDistance: 0,
+                strokeData: [],
+                splitData: [],
+                gpsData: []
+            };
+            
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+            
+            document.getElementById('workoutSummary').style.display = 'none';
+            document.getElementById('workoutHistory').style.display = 'none';
+            
+            // Start GPS tracking
+            if ('geolocation' in navigator) {
+                watchId = navigator.geolocation.watchPosition(
+                    updatePosition,
+                    (error) => console.log('GPS error:', error),
+                    {
+                        enableHighAccuracy: true,
+                        maximumAge: 1000,
+                        timeout: 10000
+                    }
+                );
+            }
+            
+            // Start the main update loop
+            updateDisplay();
+            
+            speak('Workout started');
+        }
+        
+        function stopWorkout() {
+            if (!isRunning) return;
+            
+            isRunning = false;
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+            
+            // Finalize workout data
+            currentWorkoutData.endTime = Date.now();
+            currentWorkoutData.totalDistance = totalDistance;
+            
+            // Stop GPS tracking
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            showWorkoutSummary();
+            speak('Workout stopped');
+        }
+        
+        function resetWorkout() {
+            stopWorkout();
+            
+            totalDistance = 0;
+            strokeCount = 0;
+            strokeTimes = [];
+            speedHistory = [];
+            lastPosition = null;
+            startTime = null;
+            currentStrokeRate = 0;
+            lastAnnouncedStrokeRate = 0;
+            
+            // Reset current workout data
+            currentWorkoutData = {
+                id: null,
+                startTime: null,
+                endTime: null,
+                totalDistance: 0,
+                strokeData: [],
+                splitData: [],
+                gpsData: []
+            };
+            
+            strokeRateEl.textContent = '--';
+            splitEl.textContent = '--:--';
+            distanceEl.textContent = '0m';
+            elapsedTimeEl.textContent = '0:00';
+            
+            document.getElementById('workoutSummary').style.display = 'none';
+            document.getElementById('workoutHistory').style.display = 'none';
+        }
+        
+        function updatePosition(position) {
+            if (!isRunning) return;
+            
+            const currentPos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                timestamp: position.timestamp
+            };
+            
+            // Store GPS data for workout history
+            currentWorkoutData.gpsData.push({
+                lat: currentPos.lat,
+                lng: currentPos.lng,
+                timestamp: currentPos.timestamp
+            });
+            
+            if (lastPosition) {
+                const distance = calculateDistance(lastPosition, currentPos);
+                const timeDiff = (currentPos.timestamp - lastPosition.timestamp) / 1000;
+                
+                if (distance > 0.5 && timeDiff > 0) { // Filter out GPS noise
+                    totalDistance += distance;
+                    const speed = distance / timeDiff; // m/s
+                    speedHistory.push({ speed, timestamp: currentPos.timestamp });
+                    
+                    // Store split data
+                    if (speed > 0) {
+                        const split500m = 500 / speed;
+                        currentWorkoutData.splitData.push({
+                            split: split500m,
+                            timestamp: currentPos.timestamp
+                        });
+                    }
+                    
+                    // Keep only last 30 seconds of speed data
+                    const cutoff = currentPos.timestamp - 30000;
+                    speedHistory = speedHistory.filter(s => s.timestamp > cutoff);
+                }
+            }
+            
+            lastPosition = currentPos;
+        }
+        
+        function calculateDistance(pos1, pos2) {
+            const R = 6371000; // Earth's radius in meters
+            const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+            const dLng = (pos2.lng - pos1.lng) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function updateDisplay() {
+            if (!isRunning) return;
+            
+            const elapsed = (Date.now() - startTime) / 1000;
+            
+            // Update elapsed time
+            elapsedTimeEl.textContent = formatTime(elapsed);
+            
+            // Update distance
+            distanceEl.textContent = Math.round(totalDistance) + 'm';
+            
+            // Calculate and update split (500m pace)
+            if (speedHistory.length > 0) {
+                const avgSpeed = speedHistory.reduce((sum, s) => sum + s.speed, 0) / speedHistory.length;
+                if (avgSpeed > 0) {
+                    const split500m = 500 / avgSpeed;
+                    splitEl.textContent = formatTime(split500m);
+                }
+            }
+            
+            // Simulate stroke detection (in real app, this would use accelerometer)
+            simulateStrokeDetection(elapsed);
+            
+            // Handle audio announcements
+            handleAudioAnnouncements(elapsed);
+            
+            // Continue the loop
+            if (isRunning) {
+                setTimeout(updateDisplay, 100);
+            }
+        }
+        
+        function simulateStrokeDetection(elapsed) {
+            // Use real stroke detection if available, otherwise simulate
+            if (!motionPermission) {
+                // Fallback simulation for testing
+                const baseRate = 22;
+                const variation = Math.sin(elapsed / 10) * 3;
+                currentStrokeRate = Math.round(baseRate + variation);
+                
+                strokeTimes.push({ rate: currentStrokeRate, timestamp: Date.now() });
+                
+                // Store simulated stroke data for workout history
+                currentWorkoutData.strokeData.push({
+                    rate: currentStrokeRate,
+                    timestamp: Date.now()
+                });
+                
+                // Keep only last minute of data
+                const cutoff = Date.now() - 60000;
+                strokeTimes = strokeTimes.filter(s => s.timestamp > cutoff);
+            }
+            
+            // Update display with current stroke rate
+            strokeRateEl.textContent = currentStrokeRate || '--';
+            
+            // Check for stroke rate changes and announce if enabled
+            checkStrokeRateChange();
+        }
+        
+        function checkStrokeRateChange() {
+            const changeThreshold = parseInt(document.getElementById('strokeRateChange').value);
+            if (changeThreshold === 0 || !currentStrokeRate) return;
+            
+            if (lastAnnouncedStrokeRate > 0) {
+                const rateDifference = Math.abs(currentStrokeRate - lastAnnouncedStrokeRate);
+                if (rateDifference >= changeThreshold) {
+                    const changeDirection = currentStrokeRate > lastAnnouncedStrokeRate ? 'up' : 'down';
+                    speak(`Stroke rate ${changeDirection} to ${currentStrokeRate}`);
+                    lastAnnouncedStrokeRate = currentStrokeRate;
+                }
+            } else if (currentStrokeRate > 0) {
+                // First announcement
+                lastAnnouncedStrokeRate = currentStrokeRate;
+            }
+        }
+        
+        function handleAudioAnnouncements(elapsed) {
+            const strokeRateInterval = parseInt(document.getElementById('strokeRateInterval').value);
+            const splitInterval = parseInt(document.getElementById('splitInterval').value);
+            
+            // Announce stroke rate
+            if (strokeRateInterval > 0 && elapsed - lastStrokeRateAnnounce >= strokeRateInterval) {
+                const currentRate = strokeRateEl.textContent;
+                if (currentRate !== '--') {
+                    speak(`Stroke rate ${currentRate}`);
+                    lastStrokeRateAnnounce = elapsed;
+                }
+            }
+            
+            // Announce split
+            if (splitInterval > 0 && elapsed - lastSplitAnnounce >= splitInterval) {
+                const currentSplit = splitEl.textContent;
+                if (currentSplit !== '--:--') {
+                    const splitParts = currentSplit.split(':');
+                    speak(`Split ${splitParts[0]} minutes ${splitParts[1]} seconds`);
+                    lastSplitAnnounce = elapsed;
+                }
+            }
+        }
+        
+        function speak(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = parseFloat(document.getElementById('voiceSpeed').value);
+                utterance.volume = 0.8;
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`;
+        }
+        
+        function showWorkoutSummary() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            
+            document.getElementById('summaryDistance').textContent = Math.round(totalDistance) + 'm';
+            document.getElementById('summaryTime').textContent = formatTime(elapsed);
+            
+            if (strokeTimes.length > 0) {
+                const avgStrokeRate = strokeTimes.reduce((sum, s) => sum + s.rate, 0) / strokeTimes.length;
+                document.getElementById('summaryAvgStrokeRate').textContent = Math.round(avgStrokeRate);
+            }
+            
+            if (totalDistance > 0 && elapsed > 0) {
+                const avgSpeed = totalDistance / elapsed;
+                const avgSplit = 500 / avgSpeed;
+                document.getElementById('summaryAvgSplit').textContent = formatTime(avgSplit);
+            }
+            
+            document.getElementById('workoutSummary').style.display = 'block';
+        }
+        
+        function saveWorkout() {
+            if (!currentWorkoutData.id) return;
+            
+            const elapsed = (currentWorkoutData.endTime - currentWorkoutData.startTime) / 1000;
+            
+            // Calculate averages
+            let avgStrokeRate = 0;
+            let avgSplit = 0;
+            
+            if (currentWorkoutData.strokeData.length > 0) {
+                avgStrokeRate = currentWorkoutData.strokeData.reduce((sum, s) => sum + s.rate, 0) / currentWorkoutData.strokeData.length;
+            }
+            
+            if (currentWorkoutData.splitData.length > 0) {
+                avgSplit = currentWorkoutData.splitData.reduce((sum, s) => sum + s.split, 0) / currentWorkoutData.splitData.length;
+            }
+            
+            const workout = {
+                id: currentWorkoutData.id,
+                date: new Date(currentWorkoutData.startTime).toLocaleDateString(),
+                time: new Date(currentWorkoutData.startTime).toLocaleTimeString(),
+                duration: elapsed,
+                distance: Math.round(currentWorkoutData.totalDistance),
+                avgStrokeRate: Math.round(avgStrokeRate),
+                avgSplit: avgSplit,
+                strokeData: currentWorkoutData.strokeData,
+                splitData: currentWorkoutData.splitData,
+                gpsData: currentWorkoutData.gpsData
+            };
+            
+            workoutHistory.unshift(workout); // Add to beginning
+            
+            // Keep only last 50 workouts
+            if (workoutHistory.length > 50) {
+                workoutHistory = workoutHistory.slice(0, 50);
+            }
+            
+            localStorage.setItem('rowingWorkouts', JSON.stringify(workoutHistory));
+            
+            speak('Workout saved');
+            document.getElementById('workoutSummary').style.display = 'none';
+        }
+        
+        function showWorkoutHistory() {
+            const historyList = document.getElementById('historyList');
+            
+            if (workoutHistory.length === 0) {
+                historyList.innerHTML = '<p style="text-align: center; opacity: 0.7;">No saved workouts yet.</p>';
+            } else {
+                historyList.innerHTML = workoutHistory.map((workout, index) => `
+                    <div class="history-item">
+                        <h4>${workout.date} at ${workout.time}</h4>
+                        <div class="history-stats">
+                            <div class="history-stat">
+                                <span>Duration:</span>
+                                <span>${formatTime(workout.duration)}</span>
+                            </div>
+                            <div class="history-stat">
+                                <span>Distance:</span>
+                                <span>${workout.distance}m</span>
+                            </div>
+                            <div class="history-stat">
+                                <span>Avg Split:</span>
+                                <span>${workout.avgSplit > 0 ? formatTime(workout.avgSplit) : '--:--'}</span>
+                            </div>
+                            <div class="history-stat">
+                                <span>Avg Rate:</span>
+                                <span>${workout.avgStrokeRate || '--'}</span>
+                            </div>
+                        </div>
+                        <button class="delete-workout" onclick="deleteWorkout(${index})">Delete</button>
+                    </div>
+                `).join('');
+            }
+            
+            document.getElementById('workoutHistory').style.display = 'block';
+            document.getElementById('workoutSummary').style.display = 'none';
+        }
+        
+        function hideWorkoutHistory() {
+            document.getElementById('workoutHistory').style.display = 'none';
+        }
+        
+        function deleteWorkout(index) {
+            workoutHistory.splice(index, 1);
+            localStorage.setItem('rowingWorkouts', JSON.stringify(workoutHistory));
+            showWorkoutHistory(); // Refresh the display
+        }
+        
+        function clearHistory() {
+            if (confirm('Are you sure you want to delete all workout history?')) {
+                workoutHistory = [];
+                localStorage.setItem('rowingWorkouts', JSON.stringify(workoutHistory));
+                showWorkoutHistory(); // Refresh the display
+                speak('History cleared');
+            }
+        }
+        
+        // Initialize button states
+        stopBtn.disabled = true;
+        
+        // Register Service Worker for PWA functionality
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('SW registered: ', registration);
+                    })
+                    .catch((registrationError) => {
+                        console.log('SW registration failed: ', registrationError);
+                    });
+            });
+        }
+        
+        // PWA install prompt
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            
+            // Show install button if not already installed
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn';
+            installBtn.style.cssText = 'background: linear-gradient(45deg, #ff6b6b, #ee5a52); margin: 10px 0;';
+            installBtn.textContent = '📱 Install App';
+            installBtn.onclick = installApp;
+            
+            document.querySelector('.container').insertBefore(installBtn, document.querySelector('.controls'));
+        });
+        
+        function installApp() {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                    }
+                    deferredPrompt = null;
+                });
+            }
+        }
+    </script>
+</body>
+</html>
