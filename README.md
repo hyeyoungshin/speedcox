@@ -8,7 +8,7 @@ a mobile app speedcoach with audio feedback and detailed workout logging
 
 ### Key Features:
 - **GPS Tracking**: Uses the device's GPS to track distance and calculate speed
-- **Stroke Rate Monitoring**: Currently simulated (would need accelerometer data in a real implementation)
+- **Stroke Rate Monitoring**: Uses real motion sensors for stroke detection
 - **Split Calculation**: Shows 500m split pace based on current speed
 - **Audio Announcements**: Configurable voice announcements for stroke rate and split times
 - **Workout Summary**: Shows total distance, time, and averages after each session
