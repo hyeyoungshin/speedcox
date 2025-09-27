@@ -1,0 +1,930 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Basic HTML document setup -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rowing Speedcoach</title>
+    <style>
+        /* CSS STYLES - This section controls how the app looks */
+        
+        /* Reset default browser styles and set up basic layout */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box; /* Makes padding/border included in element size calculations */
+        }
+        
+        /* Main body styling - sets up the overall appearance */
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Blue gradient background */
+            color: white;
+            min-height: 100vh; /* Full screen height */
+            padding: 20px;
+        }
+        
+        /* Main container that holds all content */
+        .container {
+            max-width: 600px; /* Limits width for better mobile/desktop experience */
+            margin: 0 auto; /* Centers the container */
+            background: rgba(255, 255, 255, 0.1); /* Semi-transparent white background */
+            backdrop-filter: blur(10px); /* Creates glass effect */
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Drop shadow */
+        }
+        
+        /* Main title styling */
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Adds depth to text */
+        }
+        
+        /* GPS status indicator at top of app */
+        .status-indicator {
+            display: flex; /* Arranges items horizontally */
+            align-items: center; /* Vertically centers items */
+            justify-content: center; /* Horizontally centers items */
+            margin-bottom: 20px;
+            gap: 10px; /* Space between dot and text */
+            font-size: 1.1em;
+        }
+        
+        /* Small colored dot that shows GPS status */
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%; /* Makes it circular */
+            background: #ff4444; /* Red by default (GPS not ready) */
+            animation: pulse 2s infinite; /* Pulsing animation */
+        }
+        
+        /* When GPS is active, dot turns green */
+        .status-dot.active {
+            background: #44ff44; /* Green color */
+        }
+        
+        /* Pulsing animation for status dot */
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        /* Grid layout for the four main metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* Two equal columns */
+            gap: 20px; /* Space between grid items */
+            margin-bottom: 30px;
+        }
+        
+        /* Individual metric display card */
+        .metric-card {
+            background: rgba(255, 255, 255, 0.15); /* Semi-transparent background */
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+        }
+        
+        /* Label for each metric (e.g., "STROKE RATE") */
+        .metric-label {
+            font-size: 0.9em;
+            opacity: 0.8; /* Slightly faded */
+            margin-bottom: 8px;
+            text-transform: uppercase; /* Makes text all caps */
+            letter-spacing: 1px; /* Adds space between letters */
+        }
+        
+        /* The actual metric value (e.g., "24") */
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #ffffff;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Container for control buttons */
+        .controls {
+            display: flex;
+            gap: 15px; /* Space between buttons */
+            margin-bottom: 30px;
+        }
+        
+        /* Base button styling */
+        .btn {
+            flex: 1; /* Each button takes equal width */
+            padding: 15px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer; /* Shows hand cursor on hover */
+            transition: all 0.3s ease; /* Smooth animation on hover */
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* Start button - green gradient */
+        .btn-start {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        /* Start button hover effect */
+        .btn-start:hover {
+            transform: translateY(-2px); /* Moves button up slightly */
+            box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); /* Glowing shadow */
+        }
+        
+        /* Stop button - red gradient */
+        .btn-stop {
+            background: linear-gradient(45deg, #dc3545, #c82333);
+            color: white;
+        }
+        
+        /* Stop button hover effect */
+        .btn-stop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+        }
+        
+        /* Reset button - gray gradient */
+        .btn-reset {
+            background: linear-gradient(45deg, #6c757d, #545b62);
+            color: white;
+        }
+        
+        /* Reset button hover effect */
+        .btn-reset:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+        }
+        
+        /* Audio settings panel */
+        .settings {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        /* Settings panel title */
+        .settings h3 {
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        /* Individual setting row (label + control) */
+        .setting-row {
+            display: flex;
+            justify-content: space-between; /* Label on left, control on right */
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        /* Remove margin from last setting row */
+        .setting-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        /* Setting labels */
+        .setting-row label {
+            font-weight: bold;
+        }
+        
+        /* Dropdown and input styling */
+        .setting-row input, .setting-row select {
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            width: 120px;
+        }
+        
+        /* Placeholder text color for inputs */
+        .setting-row input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        /* Workout summary panel (shown after workout ends) */
+        .workout-summary {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        /* Summary title */
+        .workout-summary h3 {
+            margin-bottom: 15px;
+            color: #ffd700; /* Gold color */
+        }
+        
+        /* Grid for summary statistics */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive columns */
+            gap: 15px;
+        }
+        
+        /* Individual summary statistic */
+        .summary-stat {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        /* Summary statistic label */
+        .summary-stat .label {
+            font-size: 0.9em;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+        
+        /* Summary statistic value */
+        .summary-stat .value {
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- HTML STRUCTURE - This section defines what appears on the page -->
+    
+    <div class="container">
+        <!-- Main app title -->
+        <h1>🚣 Speedcoach</h1>
+        
+        <!-- GPS status indicator -->
+        <div class="status-indicator">
+            <div class="status-dot" id="gpsStatus"></div>
+            <span id="gpsStatusText">GPS: Waiting...</span>
+        </div>
+        
+        <!-- Main metrics display - shows current workout data -->
+        <div class="metrics-grid">
+            <!-- Stroke rate display -->
+            <div class="metric-card">
+                <div class="metric-label">Stroke Rate</div>
+                <div class="metric-value" id="strokeRate">--</div>
+            </div>
+            
+            <!-- Split time display (time to row 500 meters) -->
+            <div class="metric-card">
+                <div class="metric-label">Split (500m)</div>
+                <div class="metric-value" id="split">--:--</div>
+            </div>
+            
+            <!-- Total distance display -->
+            <div class="metric-card">
+                <div class="metric-label">Distance</div>
+                <div class="metric-value" id="distance">0m</div>
+            </div>
+            
+            <!-- Elapsed time display -->
+            <div class="metric-card">
+                <div class="metric-label">Time</div>
+                <div class="metric-value" id="elapsedTime">0:00</div>
+            </div>
+        </div>
+        
+        <!-- Control buttons - BACK TO SIMPLE WORKING APPROACH -->
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn" onclick="startWorkout()">Start</button>
+            <button class="btn btn-stop" id="stopBtn" onclick="stopWorkout()">Stop</button>
+            <button class="btn btn-reset" onclick="resetWorkout()">Reset</button>
+        </div>
+        
+        <!-- Audio settings panel -->
+        <div class="settings">
+            <h3>Audio Settings</h3>
+            
+            <!-- How often to announce stroke rate -->
+            <div class="setting-row">
+                <label>Announce Stroke Rate:</label>
+                <select id="strokeRateInterval">
+                    <option value="0">Off</option>
+                    <option value="30" selected>Every 30s</option>
+                    <option value="60">Every 1 min</option>
+                    <option value="120">Every 2 min</option>
+                </select>
+            </div>
+            
+            <!-- How often to announce split time -->
+            <div class="setting-row">
+                <label>Announce Split:</label>
+                <select id="splitInterval">
+                    <option value="0">Off</option>
+                    <option value="60">Every 1 min</option>
+                    <option value="120" selected>Every 2 min</option>
+                    <option value="300">Every 5 min</option>
+                </select>
+            </div>
+            
+            <!-- Voice speed control -->
+            <div class="setting-row">
+                <label>Voice Speed:</label>
+                <select id="voiceSpeed">
+                    <option value="0.8">Slow</option>
+                    <option value="1.0" selected>Normal</option>
+                    <option value="1.2">Fast</option>
+                </select>
+            </div>
+            
+            <!-- Motion sensor activation (mainly for iOS) -->
+            <div class="setting-row">
+                <label>Motion Sensors:</label>
+                <button onclick="requestMotionPermission()" style="padding: 8px 12px; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(255, 255, 255, 0.2); color: white; cursor: pointer;">
+                    Enable
+                </button>
+            </div>
+        </div>
+        
+        <!-- Workout summary (hidden by default, shows after workout ends) -->
+        <div class="workout-summary" id="workoutSummary" style="display: none;">
+            <h3>Workout Summary</h3>
+            <div class="summary-stats">
+                <div class="summary-stat">
+                    <div class="label">Total Distance</div>
+                    <div class="value" id="summaryDistance">0m</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Total Time</div>
+                    <div class="value" id="summaryTime">0:00</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Avg Split</div>
+                    <div class="value" id="summaryAvgSplit">--:--</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="label">Avg Stroke Rate</div>
+                    <div class="value" id="summaryAvgStrokeRate">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* JAVASCRIPT CODE - This section makes the app interactive and functional */
+        
+        // =============================================================================
+        // GLOBAL VARIABLES - These store the app's current state
+        // =============================================================================
+        
+        // Workout state tracking
+        let isRunning = false;          // Is a workout currently active?
+        let startTime = null;           // When did the current workout start? (timestamp)
+        let totalDistance = 0;          // How far have we rowed? (in meters)
+        let lastPosition = null;        // Last GPS position we recorded
+        let strokeCount = 0;            // How many strokes in this workout?
+        let lastStrokeTime = 0;         // When was the last stroke? (for rate calculation)
+        let strokeTimes = [];           // Array storing recent stroke timestamps
+        let speedHistory = [];          // Array storing recent speed measurements
+        let watchId = null;             // GPS tracking ID (so we can stop it later)
+        
+        // Motion sensor data for stroke detection - NEW!
+        let motionPermission = false;   // Do we have permission to use motion sensors?
+        let accelerationHistory = [];   // Array storing recent acceleration data
+        let lastStrokeDetection = 0;    // When did we last detect a stroke?
+        let currentStrokeRate = 0;      // Current calculated stroke rate
+        
+        // Audio announcement timing
+        let lastStrokeRateAnnounce = 0; // When did we last announce stroke rate?
+        let lastSplitAnnounce = 0;      // When did we last announce split time?
+        
+        // =============================================================================
+        // HTML ELEMENT REFERENCES - Quick access to page elements we'll update
+        // =============================================================================
+        
+        const gpsStatus = document.getElementById('gpsStatus');           // GPS status dot
+        const gpsStatusText = document.getElementById('gpsStatusText');   // GPS status text
+        const strokeRateEl = document.getElementById('strokeRate');       // Stroke rate display
+        const splitEl = document.getElementById('split');                 // Split time display
+        const distanceEl = document.getElementById('distance');           // Distance display
+        const elapsedTimeEl = document.getElementById('elapsedTime');     // Time display
+        const startBtn = document.getElementById('startBtn');             // Start button
+        const stopBtn = document.getElementById('stopBtn');               // Stop button
+        
+        // =============================================================================
+        // INITIALIZATION - Set up the app when page loads
+        // =============================================================================
+        
+        // Check if GPS is available and get initial position
+        if ('geolocation' in navigator) {
+            // Browser supports GPS - try to get current location
+            navigator.geolocation.getCurrentPosition(
+                // Success callback - GPS is working
+                (position) => {
+                    gpsStatus.classList.add('active');  // Turn status dot green
+                    gpsStatusText.textContent = 'GPS: Ready';
+                },
+                // Error callback - GPS failed
+                (error) => {
+                    gpsStatusText.textContent = 'GPS: Error - ' + error.message;
+                }
+            );
+        } else {
+            // Browser doesn't support GPS
+            gpsStatusText.textContent = 'GPS: Not supported';
+        }
+        
+        // =============================================================================
+        // MOTION SENSOR FUNCTIONS - NEW! (Real accelerometer implementation)
+        // =============================================================================
+        
+        /**
+         * Request permission to use device motion sensors - NEW!
+         * Different handling for iOS vs Android
+         */
+        function requestMotionPermission() {
+            console.log('requestMotionPermission called');
+            
+            // For iOS 13+ devices
+            if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+                console.log('iOS device detected, requesting motion permission...');
+                DeviceMotionEvent.requestPermission()
+                    .then(permission => {
+                        if (permission === 'granted') {
+                            motionPermission = true;
+                            setupMotionListeners();
+                            console.log('Motion permission granted on iOS');
+                            alert('Motion sensors enabled! Start a workout to use real stroke detection.');
+                        } else {
+                            console.log('Motion permission denied on iOS');
+                            alert('Motion permission denied. Will use simulated stroke rate.');
+                            motionPermission = false;
+                        }
+                    })
+                    .catch(error => {
+                        console.log('Error requesting motion permission:', error);
+                        alert('Error enabling motion sensors: ' + error.message);
+                        motionPermission = false;
+                    });
+            } 
+            // For Android and older iOS devices
+            else if ('DeviceMotionEvent' in window) {
+                motionPermission = true;
+                setupMotionListeners();
+                console.log('Motion sensors available (Android or older iOS)');
+                alert('Motion sensors enabled! Start a workout to use real stroke detection.');
+            } 
+            // No motion sensor support
+            else {
+                console.log('Motion sensors not supported by this browser');
+                alert('Motion sensors not supported by your browser. Will use simulated stroke rate.');
+                motionPermission = false;
+            }
+        }
+        
+        /**
+         * Set up motion sensor event listeners - NEW!
+         * Only called if we have permission
+         */
+        function setupMotionListeners() {
+            // Listen for device motion events (accelerometer data)
+            window.addEventListener('devicemotion', handleDeviceMotion);
+            console.log('Motion event listeners set up');
+        }
+        
+        /**
+         * Process accelerometer data for stroke detection - NEW!
+         * Called automatically when device moves
+         * @param {DeviceMotionEvent} event - Motion data from device
+         */
+        function handleDeviceMotion(event) {
+            // Only process motion during active workout
+            if (!isRunning || !motionPermission) return;
+            
+            // Get acceleration data (including gravity)
+            const acceleration = event.accelerationIncludingGravity;
+            if (!acceleration || acceleration.x === null) return;
+            
+            const timestamp = Date.now();
+            
+            // Calculate total acceleration magnitude (combines x, y, z axes)
+            // This gives us overall "intensity" of movement regardless of phone orientation
+            const magnitude = Math.sqrt(
+                Math.pow(acceleration.x || 0, 2) +  // Left/right movement
+                Math.pow(acceleration.y || 0, 2) +  // Forward/back movement  
+                Math.pow(acceleration.z || 0, 2)    // Up/down movement
+            );
+            
+            // Store acceleration data for analysis
+            accelerationHistory.push({ magnitude, timestamp });
+            
+            // Keep only last 10 seconds of data (prevents memory issues)
+            const cutoff = timestamp - 10000; // 10 seconds ago
+            accelerationHistory = accelerationHistory.filter(a => a.timestamp > cutoff);
+            
+            // Try to detect if this motion represents a rowing stroke
+            detectStroke(magnitude, timestamp);
+        }
+        
+        /**
+         * Analyze acceleration data to detect rowing strokes - NEW!
+         * Looks for patterns that match rowing motion
+         * @param {Number} magnitude - Current acceleration magnitude
+         * @param {Number} timestamp - When this measurement was taken
+         */
+        function detectStroke(magnitude, timestamp) {
+            // Need enough data points to detect patterns
+            if (accelerationHistory.length < 20) return;
+            
+            // Calculate recent average acceleration (baseline)
+            const recentData = accelerationHistory.slice(-20); // Last 20 data points
+            const avgMagnitude = recentData.reduce((sum, a) => sum + a.magnitude, 0) / recentData.length;
+            
+            // Stroke detection threshold: current motion must be significantly higher than baseline
+            const threshold = avgMagnitude + 2; // Adjust this number to change sensitivity
+            
+            // Detect stroke if:
+            // 1. Current acceleration is much higher than average (indicates sudden movement)
+            // 2. Enough time has passed since last stroke (prevents counting same stroke multiple times)
+            if (magnitude > threshold && timestamp - lastStrokeDetection > 800) { // 800ms = minimum time between strokes
+                
+                strokeCount++;
+                lastStrokeDetection = timestamp;
+                
+                // Calculate stroke rate (strokes per minute)
+                // Count significant acceleration spikes in the last minute
+                const strokesInLastMinute = accelerationHistory.filter(
+                    a => a.timestamp > timestamp - 60000 &&  // Last 60 seconds
+                    a.magnitude > (avgMagnitude + 1.5)       // Significant motion
+                ).length;
+                
+                // Convert to strokes per minute, cap at reasonable maximum
+                currentStrokeRate = Math.min(strokesInLastMinute * 2, 40); // Max 40 SPM
+                
+                // Store for averaging and display
+                strokeTimes.push({ rate: currentStrokeRate, timestamp: timestamp });
+                
+                // Keep only last 2 minutes of stroke data
+                const strokeCutoff = timestamp - 120000; // 2 minutes ago
+                strokeTimes = strokeTimes.filter(s => s.timestamp > strokeCutoff);
+                
+                console.log(`Stroke detected! Count: ${strokeCount}, Rate: ${currentStrokeRate} SPM`);
+            }
+        }
+        
+        // =============================================================================
+        // MAIN WORKOUT CONTROL FUNCTIONS
+        // =============================================================================
+        
+        /**
+         * Starts a new workout session
+         * Called when user clicks "Start" button
+         */
+        function startWorkout() {
+            console.log('startWorkout called'); // Debug log
+            
+            // Prevent starting if already running
+            if (isRunning) return;
+            
+            // Update app state
+            isRunning = true;
+            startTime = Date.now();  // Record start time in milliseconds
+            lastStrokeRateAnnounce = 0;
+            lastSplitAnnounce = 0;
+            
+            // Update button states
+            startBtn.disabled = true;   // Disable start button
+            stopBtn.disabled = false;   // Enable stop button
+            
+            // Hide any previous workout summary
+            document.getElementById('workoutSummary').style.display = 'none';
+            
+            // Start GPS tracking
+            if ('geolocation' in navigator) {
+                watchId = navigator.geolocation.watchPosition(
+                    updatePosition,  // Function to call when GPS updates
+                    (error) => {
+                        // Better GPS error logging for debugging
+                        console.log('GPS error code:', error.code);
+                        console.log('GPS error message:', error.message);
+                        console.log('Full error object:', error);
+                        
+                        // Show user-friendly error messages
+                        if (error.code === 1) {
+                            console.log('GPS Error: Permission denied by user');
+                            gpsStatusText.textContent = 'GPS: Permission denied';
+                        } else if (error.code === 2) {
+                            console.log('GPS Error: Position unavailable (no signal)');
+                            gpsStatusText.textContent = 'GPS: No signal';
+                        } else if (error.code === 3) {
+                            console.log('GPS Error: Timeout waiting for position');
+                            gpsStatusText.textContent = 'GPS: Timeout';
+                        } else {
+                            console.log('GPS Error: Unknown error');
+                            gpsStatusText.textContent = 'GPS: Error - ' + error.message;
+                        }
+                    },
+                    {
+                        enableHighAccuracy: true,  // Use GPS, not just cell towers
+                        maximumAge: 1000,         // Accept positions up to 1 second old
+                        timeout: 10000            // Give up after 10 seconds
+                    }
+                );
+            }
+            
+            // Start the main update loop (updates display every 100ms)
+            updateDisplay();
+            
+            // Announce workout start
+            speak('Workout started');
+            console.log('Workout started successfully'); // Debug log
+        }
+        
+        /**
+         * Stops the current workout session
+         * Called when user clicks "Stop" button
+         */
+        function stopWorkout() {
+            // Prevent stopping if not running
+            if (!isRunning) return;
+            
+            // Update app state
+            isRunning = false;
+            startBtn.disabled = false;   // Re-enable start button
+            stopBtn.disabled = true;     // Disable stop button
+            
+            // Stop GPS tracking
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+            
+            // Show workout summary
+            showWorkoutSummary();
+            speak('Workout stopped');
+        }
+        
+        /**
+         * Resets all workout data to zero
+         * Called when user clicks "Reset" button
+         */
+        function resetWorkout() {
+            // Stop workout first (if running)
+            stopWorkout();
+            
+            // Reset all data to initial state
+            totalDistance = 0;
+            strokeCount = 0;
+            strokeTimes = [];
+            speedHistory = [];
+            lastPosition = null;
+            startTime = null;
+            currentStrokeRate = 0; // NEW - reset accelerometer stroke rate
+            
+            // Reset display to initial values
+            strokeRateEl.textContent = '--';
+            splitEl.textContent = '--:--';
+            distanceEl.textContent = '0m';
+            elapsedTimeEl.textContent = '0:00';
+            
+            // Hide workout summary
+            document.getElementById('workoutSummary').style.display = 'none';
+        }
+        
+        // =============================================================================
+        // GPS POSITION TRACKING
+        // =============================================================================
+        
+        /**
+         * Handles new GPS position data
+         * Called automatically by the browser when GPS position updates
+         * @param {Position} position - GPS position object from browser
+         */
+        function updatePosition(position) {
+            // Only process if workout is running
+            if (!isRunning) return;
+            
+            // Extract position data
+            const currentPos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                timestamp: position.timestamp
+            };
+            
+            // If we have a previous position, calculate distance moved
+            if (lastPosition) {
+                const distance = calculateDistance(lastPosition, currentPos);
+                const timeDiff = (currentPos.timestamp - lastPosition.timestamp) / 1000; // Convert to seconds
+                
+                // Only count significant movements (filter out GPS noise)
+                if (distance > 0.5 && timeDiff > 0) { // Must move at least 0.5 meters
+                    totalDistance += distance;
+                    const speed = distance / timeDiff; // meters per second
+                    speedHistory.push({ speed, timestamp: currentPos.timestamp });
+                    
+                    // Keep only last 30 seconds of speed data (for averaging)
+                    const cutoff = currentPos.timestamp - 30000; // 30 seconds ago
+                    speedHistory = speedHistory.filter(s => s.timestamp > cutoff);
+                }
+            }
+            
+            // Store current position for next comparison
+            lastPosition = currentPos;
+        }
+        
+        /**
+         * Calculates distance between two GPS coordinates
+         * Uses the Haversine formula to account for Earth's curvature
+         * @param {Object} pos1 - First position {lat, lng}
+         * @param {Object} pos2 - Second position {lat, lng}
+         * @returns {Number} Distance in meters
+         */
+        function calculateDistance(pos1, pos2) {
+            const R = 6371000; // Earth's radius in meters
+            
+            // Convert latitude/longitude differences to radians
+            const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+            const dLng = (pos2.lng - pos1.lng) * Math.PI / 180;
+            
+            // Haversine formula
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+                      Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c; // Distance in meters
+        }
+        
+        // =============================================================================
+        // DISPLAY UPDATE LOOP
+        // =============================================================================
+        
+        /**
+         * Main display update function
+         * Updates all metrics shown on screen
+         * Calls itself every 100ms while workout is running
+         */
+        function updateDisplay() {
+            // Only run if workout is active
+            if (!isRunning) return;
+            
+            // Calculate elapsed time since workout started
+            const elapsed = (Date.now() - startTime) / 1000; // Convert to seconds
+            
+            // Update elapsed time display (format: minutes:seconds)
+            elapsedTimeEl.textContent = formatTime(elapsed);
+            
+            // Update distance display (round to nearest meter)
+            distanceEl.textContent = Math.round(totalDistance) + 'm';
+            
+            // Calculate and update split time (how long to row 500m at current pace)
+            if (speedHistory.length > 0) {
+                // Calculate average speed from recent data
+                const avgSpeed = speedHistory.reduce((sum, s) => sum + s.speed, 0) / speedHistory.length;
+                if (avgSpeed > 0) {
+                    const split500m = 500 / avgSpeed; // Time to row 500m at current speed
+                    splitEl.textContent = formatTime(split500m);
+                }
+            }
+            
+            // Update stroke rate (now uses REAL accelerometer data!) - UPDATED!
+            updateStrokeRate(elapsed);
+            
+            // Handle audio announcements
+            handleAudioAnnouncements(elapsed);
+            
+            // Schedule next update in 100ms (creates smooth updates)
+            if (isRunning) {
+                setTimeout(updateDisplay, 100);
+            }
+        }
+        
+        /**
+         * Updates stroke rate using real accelerometer data OR simulation - UPDATED!
+         * @param {Number} elapsed - Seconds since workout started
+         */
+        function updateStrokeRate(elapsed) {
+            // If we have real motion sensor data, use that
+            if (motionPermission && currentStrokeRate > 0) {
+                // Use real accelerometer-detected stroke rate
+                strokeRateEl.textContent = currentStrokeRate;
+                return;
+            }
+            
+            // FALLBACK: Simulate stroke detection for testing/demo
+            // Create a realistic varying stroke rate (18-32 strokes per minute)
+            const baseRate = 22;  // Base stroke rate
+            const variation = Math.sin(elapsed / 10) * 3;  // Sine wave variation
+            const simulatedStrokeRate = Math.round(baseRate + variation);
+            
+            // Update display with simulated data
+            strokeRateEl.textContent = simulatedStrokeRate;
+            
+            // Store simulated stroke rate data for averaging
+            strokeTimes.push({ rate: simulatedStrokeRate, timestamp: Date.now() });
+            
+            // Keep only last minute of stroke data
+            const cutoff = Date.now() - 60000; // 60 seconds ago
+            strokeTimes = strokeTimes.filter(s => s.timestamp > cutoff);
+        }
+        
+        // =============================================================================
+        // AUDIO ANNOUNCEMENTS
+        // =============================================================================
+        
+        /**
+         * Handles periodic audio announcements based on user settings
+         * @param {Number} elapsed - Seconds since workout started
+         */
+        function handleAudioAnnouncements(elapsed) {
+            // Get user's audio settings
+            const strokeRateInterval = parseInt(document.getElementById('strokeRateInterval').value);
+            const splitInterval = parseInt(document.getElementById('splitInterval').value);
+            
+            // Announce stroke rate if enough time has passed
+            if (strokeRateInterval > 0 && elapsed - lastStrokeRateAnnounce >= strokeRateInterval) {
+                const currentRate = strokeRateEl.textContent;
+                if (currentRate !== '--') {
+                    speak(`Stroke rate ${currentRate}`);
+                    lastStrokeRateAnnounce = elapsed;
+                }
+            }
+            
+            // Announce split time if enough time has passed
+            if (splitInterval > 0 && elapsed - lastSplitAnnounce >= splitInterval) {
+                const currentSplit = splitEl.textContent;
+                if (currentSplit !== '--:--') {
+                    // Convert split time to spoken format (e.g., "2:30" becomes "2 minutes 30 seconds")
+                    const splitParts = currentSplit.split(':');
+                    speak(`Split ${splitParts[0]} minutes ${splitParts[1]} seconds`);
+                    lastSplitAnnounce = elapsed;
+                }
+            }
+        }
+        
+        /**
+         * Speaks text using browser's text-to-speech
+         * @param {String} text - Text to speak
+         */
+        function speak(text) {
+            // Check if browser supports text-to-speech
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.rate = parseFloat(document.getElementById('voiceSpeed').value); // User's preferred speed
+                utterance.volume = 0.8; // Slightly quieter than max
+                speechSynthesis.speak(utterance);
+            }
+        }
+        
+        // =============================================================================
+        // UTILITY FUNCTIONS
+        // =============================================================================
+        
+        /**
+         * Formats time in seconds to MM:SS format
+         * @param {Number} seconds - Time in seconds
+         * @returns {String} Formatted time string (e.g., "2:30")
+         */
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs.toString().padStart(2, '0')}`; // Ensures 2-digit seconds
+        }
+        
+        /**
+         * Shows workout summary after workout ends
+         * Calculates and displays average statistics
+         */
+        function showWorkoutSummary() {
+            const elapsed = (Date.now() - startTime) / 1000;
+            
+            // Update summary display elements
+            document.getElementById('summaryDistance').textContent = Math.round(totalDistance) + 'm';
+            document.getElementById('summaryTime').textContent = formatTime(elapsed);
+            
+            // Calculate average stroke rate if we have data
+            if (strokeTimes.length > 0) {
+                const avgStrokeRate = strokeTimes.reduce((sum, s) => sum + s.rate, 0) / strokeTimes.length;
+                document.getElementById('summaryAvgStrokeRate').textContent = Math.round(avgStrokeRate);
+            }
+            
+            // Calculate average split if we have distance and time
+            if (totalDistance > 0 && elapsed > 0) {
+                const avgSpeed = totalDistance / elapsed;
+                const avgSplit = 500 / avgSpeed;
+                document.getElementById('summaryAvgSplit').textContent = formatTime(avgSplit);
+            }
+            
+            // Show the summary panel
+            document.getElementById('workoutSummary').style.display = 'block';
+        }
+        
+        // =============================================================================
+        // INITIALIZATION - Final setup
+        // =============================================================================
+        
+        // Set initial button states when page loads
+        stopBtn.disabled = true; // Can't stop if we haven't started
+    </script>
+</body>
+</html>
