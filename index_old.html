@@ -4,7 +4,7 @@
     <!-- Basic HTML document setup -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>speedcox</title>
+    <title>Rowing Speedcoach</title>
     <style>
         /* CSS STYLES - This section controls how the app looks */
         
@@ -33,15 +33,6 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Drop shadow */
-            overflow-x: hidden; /* Prevent horizontal overflow */
-        }
-        
-        /* Responsive padding for mobile */
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 0 10px;
-            }
         }
         
         /* Main title styling */
@@ -122,13 +113,11 @@
             display: flex;
             gap: 15px; /* Space between buttons */
             margin-bottom: 30px;
-            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
         }
         
         /* Base button styling */
         .btn {
             flex: 1; /* Each button takes equal width */
-            min-width: 100px; /* Minimum button width */
             padding: 15px 20px;
             border: none;
             border-radius: 10px;
@@ -138,27 +127,6 @@
             transition: all 0.3s ease; /* Smooth animation on hover */
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-        
-        /* Responsive adjustment for very small screens */
-        @media (max-width: 400px) {
-            .btn {
-                font-size: 0.9em;
-                padding: 12px 15px;
-                letter-spacing: 0.5px;
-            }
-            
-            .controls {
-                gap: 10px;
-            }
-        }
-        
-        /* Additional fix for devices with zoomed-in text (accessibility) */
-        @media (max-width: 600px) {
-            .btn {
-                font-size: 1em;
-                padding: 13px 16px;
-            }
         }
         
         /* Start button - green gradient */
@@ -291,7 +259,7 @@
     
     <div class="container">
         <!-- Main app title -->
-        <h1>speedcox</h1>
+        <h1>🚣 Speedcoach</h1>
         
         <!-- GPS status indicator -->
         <div class="status-indicator">
@@ -836,24 +804,15 @@
          * @param {Number} elapsed - Seconds since workout started
          */
         function updateStrokeRate(elapsed) {
-            // If motion sensors are enabled, only show REAL detected strokes
-            if (motionPermission) {
-                if (currentStrokeRate > 0) {
-                    // Show real detected stroke rate
-                    strokeRateEl.textContent = currentStrokeRate;
-                    console.log('Using REAL stroke rate:', currentStrokeRate, 'SPM');
-                } else {
-                    // Waiting for first stroke detection
-                    strokeRateEl.textContent = '--';
-                    console.log('Motion sensors active, waiting for stroke detection...');
-                }
+            // If we have real motion sensor data, use that
+            if (motionPermission && currentStrokeRate > 0) {
+                // Use real accelerometer-detected stroke rate
+                strokeRateEl.textContent = currentStrokeRate;
                 return;
             }
             
             // FALLBACK: Simulate stroke detection for testing/demo
-            // Only runs if motion sensors are NOT available
-            console.log('Using simulated stroke rate (motion sensors not available)');
-            
+            // Create a realistic varying stroke rate (18-32 strokes per minute)
             const baseRate = 22;  // Base stroke rate
             const variation = Math.sin(elapsed / 10) * 3;  // Sine wave variation
             const simulatedStrokeRate = Math.round(baseRate + variation);
