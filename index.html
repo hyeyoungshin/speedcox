@@ -836,15 +836,24 @@
          * @param {Number} elapsed - Seconds since workout started
          */
         function updateStrokeRate(elapsed) {
-            // If we have real motion sensor data, use that
-            if (motionPermission && currentStrokeRate > 0) {
-                // Use real accelerometer-detected stroke rate
-                strokeRateEl.textContent = currentStrokeRate;
+            // If motion sensors are enabled, only show REAL detected strokes
+            if (motionPermission) {
+                if (currentStrokeRate > 0) {
+                    // Show real detected stroke rate
+                    strokeRateEl.textContent = currentStrokeRate;
+                    console.log('Using REAL stroke rate:', currentStrokeRate, 'SPM');
+                } else {
+                    // Waiting for first stroke detection
+                    strokeRateEl.textContent = '--';
+                    console.log('Motion sensors active, waiting for stroke detection...');
+                }
                 return;
             }
             
             // FALLBACK: Simulate stroke detection for testing/demo
-            // Create a realistic varying stroke rate (18-32 strokes per minute)
+            // Only runs if motion sensors are NOT available
+            console.log('Using simulated stroke rate (motion sensors not available)');
+            
             const baseRate = 22;  // Base stroke rate
             const variation = Math.sin(elapsed / 10) * 3;  // Sine wave variation
             const simulatedStrokeRate = Math.round(baseRate + variation);
