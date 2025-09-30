@@ -33,15 +33,6 @@
             border-radius: 20px;
             padding: 30px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Drop shadow */
-            overflow-x: hidden; /* Prevent horizontal overflow */
-        }
-        
-        /* Responsive padding for mobile */
-        @media (max-width: 600px) {
-            .container {
-                padding: 20px;
-                margin: 0 10px;
-            }
         }
         
         /* Main title styling */
@@ -122,13 +113,11 @@
             display: flex;
             gap: 15px; /* Space between buttons */
             margin-bottom: 30px;
-            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
         }
         
         /* Base button styling */
         .btn {
             flex: 1; /* Each button takes equal width */
-            min-width: 100px; /* Minimum button width */
             padding: 15px 20px;
             border: none;
             border-radius: 10px;
@@ -138,27 +127,6 @@
             transition: all 0.3s ease; /* Smooth animation on hover */
             text-transform: uppercase;
             letter-spacing: 1px;
-        }
-        
-        /* Responsive adjustment for very small screens */
-        @media (max-width: 400px) {
-            .btn {
-                font-size: 0.9em;
-                padding: 12px 15px;
-                letter-spacing: 0.5px;
-            }
-            
-            .controls {
-                gap: 10px;
-            }
-        }
-        
-        /* Additional fix for devices with zoomed-in text (accessibility) */
-        @media (max-width: 600px) {
-            .btn {
-                font-size: 1em;
-                padding: 13px 16px;
-            }
         }
         
         /* Start button - green gradient */
