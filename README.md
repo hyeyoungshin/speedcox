@@ -1,105 +1,127 @@
-# speedcox (previously speedcoach-AF)
-a mobile app speedcoach with audio feedback and detailed workout logging
-
-### Advantages
-- useful for rowers who want an alternative to dedicated hardware devices
-- (not new) combines GPS tracking with stroke rate calculation and (new) audio announcements
+# Speedcox: A Web-Based Rowing Performance Monitor with Audio Feedback
 
 
-### Key Features:
-- **GPS Tracking**: Uses the device's GPS to track distance and calculate speed
-- **Stroke Rate Monitoring**: Uses real motion sensors for stroke detection
-- **Split Calculation**: Shows 500m split pace based on current speed
-- **Audio Announcements**: Configurable voice announcements for stroke rate and split times
-- **Workout Summary**: Shows total distance, time, and averages after each session
+## Purpose:
+Speedcox is a Progressive Web Application (PWA) designed to replicate and enhance the functionality of the NK SpeedCoach, the industry-standard rowing performance monitor. The primary goal is to provide rowers with real-time stroke rate monitoring and audio feedback using readily available smartphone hardware, eliminating the need for dedicated specialized equipment. By leveraging modern web technologies, Speedcox offers an accessible, cost-effective alternative that can be installed directly on any mobile device.
+
+## Key Features:
+
+### Dual Stroke Rate Detection Methods:
+
+- GPS-Based Detection (NK SpeedCoach Method): Analyzes boat speed fluctuations to infer stroke rate from the characteristic speed patterns during drive and recovery phases
+- Motion Sensor Detection: Utilizes smartphone accelerometer data to detect individual rowing strokes through acceleration pattern analysis
+- Comparison Mode: Allows simultaneous display of both methods for real-time accuracy validation
 
 
-### Audio Configuration:
-- Announce stroke rate: Off, every 30s, 1 min, or 2 min
-- Announce split times: Off, every 1 min, 2 min, or 5 min
-- Voice speed: Slow, normal, or fast
+### Audio Feedback System:
 
-The GPS functionality will request location permissions when first used.
-
-
-## Mobile App
-
-Modern smartphones have both _accelerometers_ and _gyroscopes_, and they're accessible through web APIs. This makes it perfect for a mobile web app.
-
-**Real Stroke Detection Features:** The app uses real motion sensors for stroke detection.
-- Accelerometer Integration: Uses DeviceMotionEvent to access phone's motion sensors
-- iOS Permission Handling: Properly requests permission on iOS 13+ devices
-- Smart Stroke Detection: Analyzes acceleration patterns to detect rowing strokes
-- Rate Calculation: Calculates actual stroke rate based on detected strokes per minute
-- Fallback Mode: Still works with simulated data if motion sensors aren't available
-
-### How It Works:
-
-- Motion Sensing: Continuously monitors phone's acceleration in all three axes
-- Pattern Recognition: Looks for acceleration peaks that indicate stroke movements
-- Filtering: Prevents double-counting strokes with minimum time intervals
-- Rate Calculation: Counts actual strokes in recent time windows to calculate SPM (strokes per minute)
-
-### Mobile Optimization:
-
-- Handles both iOS and Android motion permission models
-- Responsive design perfect for phone screens
-- Touch-friendly controls
-- Battery-efficient sensor sampling
-
-The app will automatically detect if motion sensors are available and use them. If not (like on desktop), it falls back to simulated stroke rates for testing.
-
-### Usage Tips for Rowers:
-
-Mount the phone securely in the boat (waterproof case recommended)
-Keep the phone oriented consistently during rowing
-The motion detection works best when the phone moves with the rowing motion
-For best GPS accuracy, ensure clear sky view
+- Configurable text-to-speech announcements for stroke rate and split times
+- Customizable announcement intervals (every 30 seconds, 1 minute, 2 minutes)
+- Adjustable voice speed to accommodate different user preferences
+- Enables hands-free monitoring without requiring visual attention
 
 
-## Advanced Features
+### GPS-Based Metrics:
 
-### Advanced Audio Settings:
-
-- Stroke Rate Change Alerts: New setting to announce stroke rate whenever it changes by ±2, ±3, or ±5 SPM
-- Smart Announcements: Only announces when there's a meaningful change, not constant chatter
-- Configurable Sensitivity: Choose how sensitive the change detection should be
-
-### Workout Data Persistence:
-
-- Auto-Save Data: Each workout automatically collects detailed data (stroke rates, splits, GPS points)
-- Workout History: "View History" button shows all saved workouts with key stats
-- Individual Workout Details: Each saved workout shows date, time, duration, distance, averages
-- Data Management: Delete individual workouts or clear entire history
-- Local Storage: All data saved locally on the device (up to 50 most recent workouts)
-
-### New Features Added:
-
-1. Rate Change Detection: Announces "Stroke rate up to 24" or "Stroke rate down to 20" when changes occur
-2. Workout Saving: After each workout, you can save it with detailed metrics and view it later
-3. Comprehensive Data Collection: Each workout stores stroke data, split times, and GPS coordinates throughout the session
-4. History Management: Browse, review, and delete saved workouts with an intuitive interface
-5. Persistent Storage: Uses localStorage to keep workout history between app sessions
-
-### How the Audio Works:
-
-- Rate Change Alerts: Set to announce when stroke rate changes by 3+ SPM (configurable)
-- Regular Intervals: Still announce stroke rate every 30s and splits every 2 minutes
-- Smart Timing: Avoids overlapping announcements for better clarity
-- Voice Control: Adjustable speech speed (slow/normal/fast)
-
-###  Usage Tips:
-
-- Before Rowing: Enable motion sensors and ensure GPS is working
-- During Workout: The app automatically tracks and can announce changes
-- After Rowing: Review your summary and save the workout to build your history
-- Analysis: Use workout history to track progress over time
-
-### Advantage over Speedcoach
-The app now provides a complete rowing training companion with professional-grade features that rival dedicated hardware speedcoaches, but with the added benefit of detailed workout logging and intelligent audio feedback!
+- Real-time distance tracking using Haversine formula for accurate curved-earth calculations
+- 500-meter split time calculation based on current boat speed
+- GPS noise filtering to eliminate stationary drift (minimum distance and speed thresholds)
+- Comprehensive workout summaries with average statistics
 
 
-## Deployment
-- Progressive Web App (PWA)
+### Modern Software Architecture:
 
-- Native App Stores
+- Model-View-Controller (MVC) pattern with clear separation of concerns
+- Modular design with specialized components for GPS tracking, motion detection, and audio feedback
+- Service-oriented architecture for stroke detection algorithms and data persistence
+- Progressive Web App (PWA) capabilities for offline functionality and native-like experience
+- Installable on any device without app store requirements
+
+```
+speedcox/
+├── index.html              # Main HTML structure (view only)
+├── css/
+│   └── styles.css          # All styling
+├── js/
+│   ├── app.js              # Main app controller
+│   ├── models/
+│   │   ├── workout.js      # Workout data model
+│   │   └── sensors.js      # Sensor data management
+│   ├── controllers/
+│   │   ├── gps.js          # GPS tracking logic
+│   │   ├── motion.js       # Motion sensor logic
+│   │   └── audio.js        # Audio feedback system
+│   ├── services/
+│   │   ├── strokeDetection.js    # Stroke rate algorithms
+│   │   └── storage.js      # Data persistence
+│   └── utils/
+│       ├── calculations.js # Distance, time formatting
+│       └── config.js       # Configuration constants
+├── manifest.json           # PWA manifest
+└── sw.js                   # Service worker
+```
+
+
+## Technical Challenges:
+
+1. Stroke Detection Accuracy:
+
+**Challenge:** Distinguishing genuine rowing strokes from environmental noise (waves, boat rocking, GPS fluctuations)  
+
+**Solution:** Implemented adaptive threshold algorithms that calculate baseline motion/speed and detect significant deviations. For motion sensors, using magnitude of acceleration across all axes (√(x² + y² + z²)) to detect motion regardless of phone orientation. For GPS, detecting speed peaks that exceed 10% above rolling average.
+
+
+2. GPS Signal Processing:
+** Challenge:** GPS has natural drift of ±5-10 meters even when stationary, causing false distance accumulation  
+
+**Solution:** Multi-layer filtering: minimum distance threshold (3 meters), minimum speed requirement (0.5 m/s), and time-difference validation to distinguish real movement from GPS noise
+
+
+3. Motion Sensor Permissions:
+
+**Challenge:** iOS 13+ requires explicit user permission for DeviceMotionEvent access, while Android grants automatically  
+**Solution:** Implemented conditional permission handling that detects device type and requests permissions appropriately, with graceful fallback to GPS-only mode if denied
+
+
+4. Real-Time Performance:
+
+** Challenge:** Processing high-frequency sensor data (accelerometer updates ~60 Hz, GPS ~1 Hz) without UI lag  
+
+**Solution:** Implemented efficient data structures with sliding time windows, keeping only relevant recent data (10 seconds for acceleration, 30 seconds for speed) and using setTimeout for display updates at manageable 100ms intervals
+
+
+5. Stroke Rate Calculation Timing:
+
+**Challenge:** Providing immediate stroke rate feedback vs. waiting for statistical significance  
+
+**Solution:** For motion sensors, calculate rate from strokes detected in last 10 seconds (not 60), allowing updates within 2-3 strokes. For GPS, use 30-second window of speed peaks to balance responsiveness with accuracy.
+
+
+6. Audio Timing Conflicts:
+
+**Challenge:** Multiple audio announcements could overlap (stroke rate + split time)
+
+**Solution:** Implemented independent timing trackers for each announcement type with user-configurable intervals, preventing audio collisions
+
+
+7. Cross-Platform Sensor Calibration:
+
+**Challenge:** Different phones have varying accelerometer sensitivities and GPS accuracies
+
+**Solution:** User-selectable detection methods allow rowers to choose the most accurate approach for their specific device and mounting configuration
+
+
+8. Deployment & Distribution:
+
+**Challenge:** Avoiding app store requirements while maintaining installability
+
+**Solution:** PWA architecture allows direct installation via browser with manifest.json, providing native app-like experience without distribution overhead
+
+
+
+## Future Enhancements:
+
+- Smartwatch integration via Web Bluetooth API for body-mounted stroke detection
+- Workout data persistence using localStorage with export capabilities
+- Stroke technique analysis using machine learning on acceleration patterns
+- Integration with Scala backend for complex algorithm processing and workout history database
