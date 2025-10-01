@@ -64,54 +64,54 @@ speedcox/
 
 ## Technical Challenges:
 
-### Stroke Detection Accuracy:
+### + Stroke Detection Accuracy
 
 **Challenge:** Distinguishing genuine rowing strokes from environmental noise (waves, boat rocking, GPS fluctuations)  
 
 **Solution:** Implemented adaptive threshold algorithms that calculate baseline motion/speed and detect significant deviations. For motion sensors, using magnitude of acceleration across all axes (√(x² + y² + z²)) to detect motion regardless of phone orientation. For GPS, detecting speed peaks that exceed 10% above rolling average.
 
 
-### GPS Signal Processing:
+### + GPS Signal Processing
 **Challenge:** GPS has natural drift of ±5-10 meters even when stationary, causing false distance accumulation  
 
 **Solution:** Multi-layer filtering: minimum distance threshold (3 meters), minimum speed requirement (0.5 m/s), and time-difference validation to distinguish real movement from GPS noise
 
 
-### Motion Sensor Permissions:
+### + Motion Sensor Permissions
 
 **Challenge:** iOS 13+ requires explicit user permission for DeviceMotionEvent access, while Android grants automatically  
 **Solution:** Implemented conditional permission handling that detects device type and requests permissions appropriately, with graceful fallback to GPS-only mode if denied
 
 
-### Real-Time Performance:
+### + Real-Time Performance
 
 **Challenge:** Processing high-frequency sensor data (accelerometer updates ~60 Hz, GPS ~1 Hz) without UI lag  
 
 **Solution:** Implemented efficient data structures with sliding time windows, keeping only relevant recent data (10 seconds for acceleration, 30 seconds for speed) and using setTimeout for display updates at manageable 100ms intervals
 
 
-### Stroke Rate Calculation Timing:
+### + Stroke Rate Calculation Timing
 
 **Challenge:** Providing immediate stroke rate feedback vs. waiting for statistical significance  
 
 **Solution:** For motion sensors, calculate rate from strokes detected in last 10 seconds (not 60), allowing updates within 2-3 strokes. For GPS, use 30-second window of speed peaks to balance responsiveness with accuracy.
 
 
-### Audio Timing Conflicts:
+### + Audio Timing Conflicts
 
 **Challenge:** Multiple audio announcements could overlap (stroke rate + split time)
 
 **Solution:** Implemented independent timing trackers for each announcement type with user-configurable intervals, preventing audio collisions
 
 
-### Cross-Platform Sensor Calibration:
+### + Cross-Platform Sensor Calibration
 
 **Challenge:** Different phones have varying accelerometer sensitivities and GPS accuracies
 
 **Solution:** User-selectable detection methods allow rowers to choose the most accurate approach for their specific device and mounting configuration
 
 
-### Deployment & Distribution:
+### + Deployment & Distribution
 
 **Challenge:** Avoiding app store requirements while maintaining installability
 
