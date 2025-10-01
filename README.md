@@ -72,7 +72,7 @@ speedcox/
 
 
 2. GPS Signal Processing:
-** Challenge:** GPS has natural drift of ±5-10 meters even when stationary, causing false distance accumulation  
+**Challenge:** GPS has natural drift of ±5-10 meters even when stationary, causing false distance accumulation  
 
 **Solution:** Multi-layer filtering: minimum distance threshold (3 meters), minimum speed requirement (0.5 m/s), and time-difference validation to distinguish real movement from GPS noise
 
@@ -85,7 +85,7 @@ speedcox/
 
 4. Real-Time Performance:
 
-** Challenge:** Processing high-frequency sensor data (accelerometer updates ~60 Hz, GPS ~1 Hz) without UI lag  
+**Challenge:** Processing high-frequency sensor data (accelerometer updates ~60 Hz, GPS ~1 Hz) without UI lag  
 
 **Solution:** Implemented efficient data structures with sliding time windows, keeping only relevant recent data (10 seconds for acceleration, 30 seconds for speed) and using setTimeout for display updates at manageable 100ms intervals
 
