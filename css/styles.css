@@ -1,0 +1,314 @@
+/* 
+ * Speedcox Styles
+ * Extracted from index.html for better maintainability
+ */
+
+/* ============================================================================= */
+/* RESET & BASE STYLES */
+/* ============================================================================= */
+
+/* Reset default browser styles and set up basic layout */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Makes padding/border included in element size calculations */
+}
+
+/* Main body styling - sets up the overall appearance */
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%); /* Blue gradient background */
+    color: white;
+    min-height: 100vh; /* Full screen height */
+    padding: 0;
+    margin: 0;
+}
+
+/* ============================================================================= */
+/* CONTAINER & LAYOUT */
+/* ============================================================================= */
+
+/* Main container that holds all content */
+.container {
+    max-width: 600px; /* Limits width for better mobile/desktop experience */
+    margin: 0 auto; /* Centers the container */
+    background: rgba(255, 255, 255, 0.1); /* Semi-transparent white background */
+    backdrop-filter: blur(10px); /* Creates glass effect */
+    border-radius: 20px;
+    padding: 30px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); /* Drop shadow */
+    overflow-x: hidden; /* Prevent horizontal overflow */
+}
+
+/* Responsive padding for mobile */
+@media (max-width: 600px) {
+    .container {
+        padding: 20px;
+        margin: 0 10px;
+    }
+}
+
+/* ============================================================================= */
+/* TYPOGRAPHY */
+/* ============================================================================= */
+
+/* Main title styling */
+h1 {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 2.5em;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Adds depth to text */
+}
+
+/* ============================================================================= */
+/* STATUS INDICATOR */
+/* ============================================================================= */
+
+/* GPS status indicator at top of app */
+.status-indicator {
+    display: flex; /* Arranges items horizontally */
+    align-items: center; /* Vertically centers items */
+    justify-content: center; /* Horizontally centers items */
+    margin-bottom: 20px;
+    gap: 10px; /* Space between dot and text */
+    font-size: 1.1em;
+}
+
+/* Small colored dot that shows GPS status */
+.status-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%; /* Makes it circular */
+    background: #ff4444; /* Red by default (GPS not ready) */
+    animation: pulse 2s infinite; /* Pulsing animation */
+}
+
+/* When GPS is active, dot turns green */
+.status-dot.active {
+    background: #44ff44; /* Green color */
+}
+
+/* Pulsing animation for status dot */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* ============================================================================= */
+/* METRICS DISPLAY */
+/* ============================================================================= */
+
+/* Grid layout for the four main metrics */
+.metrics-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Two equal columns */
+    gap: 20px; /* Space between grid items */
+    margin-bottom: 30px;
+}
+
+/* Individual metric display card */
+.metric-card {
+    background: rgba(255, 255, 255, 0.15); /* Semi-transparent background */
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    border: 1px solid rgba(255, 255, 255, 0.2); /* Subtle border */
+}
+
+/* Label for each metric (e.g., "STROKE RATE") */
+.metric-label {
+    font-size: 0.9em;
+    opacity: 0.8; /* Slightly faded */
+    margin-bottom: 8px;
+    text-transform: uppercase; /* Makes text all caps */
+    letter-spacing: 1px; /* Adds space between letters */
+}
+
+/* The actual metric value (e.g., "24") */
+.metric-value {
+    font-size: 2em;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================================= */
+/* CONTROL BUTTONS */
+/* ============================================================================= */
+
+/* Container for control buttons */
+.controls {
+    display: flex;
+    gap: 15px; /* Space between buttons */
+    margin-bottom: 30px;
+    flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+}
+
+/* Base button styling */
+.btn {
+    flex: 1; /* Each button takes equal width */
+    min-width: 100px; /* Minimum button width */
+    padding: 15px 20px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1.1em;
+    font-weight: bold;
+    cursor: pointer; /* Shows hand cursor on hover */
+    transition: all 0.3s ease; /* Smooth animation on hover */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Start button - green gradient */
+.btn-start {
+    background: linear-gradient(45deg, #28a745, #20c997);
+    color: white;
+}
+
+/* Start button hover effect */
+.btn-start:hover {
+    transform: translateY(-2px); /* Moves button up slightly */
+    box-shadow: 0 5px 15px rgba(40, 167, 69, 0.4); /* Glowing shadow */
+}
+
+/* Stop button - red gradient */
+.btn-stop {
+    background: linear-gradient(45deg, #dc3545, #c82333);
+    color: white;
+}
+
+/* Stop button hover effect */
+.btn-stop:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(220, 53, 69, 0.4);
+}
+
+/* Reset button - gray gradient */
+.btn-reset {
+    background: linear-gradient(45deg, #6c757d, #545b62);
+    color: white;
+}
+
+/* Reset button hover effect */
+.btn-reset:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.4);
+}
+
+/* Responsive adjustment for very small screens */
+@media (max-width: 400px) {
+    .btn {
+        font-size: 0.9em;
+        padding: 12px 15px;
+        letter-spacing: 0.5px;
+    }
+    
+    .controls {
+        gap: 10px;
+    }
+}
+
+/* Additional fix for devices with zoomed-in text (accessibility) */
+@media (max-width: 600px) {
+    .btn {
+        font-size: 1em;
+        padding: 13px 16px;
+    }
+}
+
+/* ============================================================================= */
+/* SETTINGS PANEL */
+/* ============================================================================= */
+
+/* Audio settings panel */
+.settings {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Settings panel title */
+.settings h3 {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+/* Individual setting row (label + control) */
+.setting-row {
+    display: flex;
+    justify-content: space-between; /* Label on left, control on right */
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* Remove margin from last setting row */
+.setting-row:last-child {
+    margin-bottom: 0;
+}
+
+/* Setting labels */
+.setting-row label {
+    font-weight: bold;
+}
+
+/* Dropdown and input styling */
+.setting-row input, .setting-row select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 120px;
+}
+
+/* Placeholder text color for inputs */
+.setting-row input::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================================= */
+/* WORKOUT SUMMARY */
+/* ============================================================================= */
+
+/* Workout summary panel (shown after workout ends) */
+.workout-summary {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+}
+
+/* Summary title */
+.workout-summary h3 {
+    margin-bottom: 15px;
+    color: #ffd700; /* Gold color */
+}
+
+/* Grid for summary statistics */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); /* Responsive columns */
+    gap: 15px;
+}
+
+/* Individual summary statistic */
+.summary-stat {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 15px;
+    border-radius: 10px;
+}
+
+/* Summary statistic label */
+.summary-stat .label {
+    font-size: 0.9em;
+    opacity: 0.8;
+    margin-bottom: 5px;
+}
+
+/* Summary statistic value */
+.summary-stat .value {
+    font-size: 1.5em;
+    font-weight: bold;
+}
