@@ -1,58 +1,23 @@
 /**
  * Speedcox - Main Application Controller
  * Rowing performance monitor with GPS and motion sensor stroke detection
+ * 
+ * This controller coordinates between models, handles UI updates, and manages user interactions
  */
-
-/* =============================================================================
- * GLOBAL VARIABLES - These store the app's current state
- * ============================================================================= */
-
-// Workout state tracking
-let isRunning = false;          // Is a workout currently active?
-let startTime = null;           // When did the current workout start? (timestamp)
-let totalDistance = 0;          // How far have we rowed? (in meters)
-let lastPosition = null;        // Last GPS position we recorded
-let strokeCount = 0;            // How many strokes in this workout?
-let lastStrokeTime = 0;         // When was the last stroke? (for rate calculation)
-let strokeTimes = [];           // Array storing recent stroke timestamps
-let speedHistory = [];          // Array storing recent speed measurements
-let watchId = null;             // GPS tracking ID (so we can stop it later)
-
-// Motion sensor data for stroke detection
-let motionPermission = false;   // Do we have permission to use motion sensors?
-let accelerationHistory = [];   // Array storing recent acceleration data
-let lastStrokeDetection = 0;    // When did we last detect a stroke?
-let currentStrokeRate = 0;      // Current calculated stroke rate
-
-// GPS-based stroke rate detection
-let gpsStrokeRate = 0;          // Stroke rate calculated from GPS speed patterns
-let speedPeaks = [];            // Array storing detected speed peaks (stroke cycles)
-let lastSpeedPeak = 0;          // When did we last detect a speed peak?
-
-// Stroke rate detection method selection
-let strokeRateMethod = 'gps';   // Options: 'motion' or 'gps' - Default to GPS like NK SpeedCoach
-
-// Audio announcement timing
-let lastStrokeRateAnnounce = 0; // When did we last announce stroke rate?
-let lastSplitAnnounce = 0;      // When did we last announce split time?
-
-// Logging control flags to prevent spam
-let lastLogMessage = '';        // Track last log message to avoid duplicates
-let logCounter = 0;             // Counter for periodic logs
 
 /* =============================================================================
  * HTML ELEMENT REFERENCES - Quick access to page elements we'll update
  * ============================================================================= */
 
-const gpsStatus = document.getElementById('gpsStatus');           // GPS status dot
-const gpsStatusText = document.getElementById('gpsStatusText');   // GPS status text
-const strokeRateEl = document.getElementById('strokeRate');       // Stroke rate display
-const strokeRateLabel = document.getElementById('strokeRateLabel'); // Stroke rate label
-const splitEl = document.getElementById('split');                 // Split time display
-const distanceEl = document.getElementById('distance');           // Distance display
-const elapsedTimeEl = document.getElementById('elapsedTime');     // Time display
-const startBtn = document.getElementById('startBtn');             // Start button
-const stopBtn = document.getElementById('stopBtn');               // Stop button
+const gpsStatus = document.getElementById('gpsStatus');
+const gpsStatusText = document.getElementById('gpsStatusText');
+const strokeRateEl = document.getElementById('strokeRate');
+const strokeRateLabel = document.getElementById('strokeRateLabel');
+const splitEl = document.getElementById('split');
+const distanceEl = document.getElementById('distance');
+const elapsedTimeEl = document.getElementById('elapsedTime');
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
 
 /* =============================================================================
  * INITIALIZATION - Set up the app when page loads
@@ -60,32 +25,506 @@ const stopBtn = document.getElementById('stopBtn');               // Stop button
 
 // Check if GPS is available and get initial position
 if ('geolocation' in navigator) {
-    // Browser supports GPS - try to get current location
     navigator.geolocation.getCurrentPosition(
-        // Success callback - GPS is working
         (position) => {
-            gpsStatus.classList.add('active');  // Turn status dot green
+            gpsStatus.classList.add('active');
             gpsStatusText.textContent = 'GPS: Ready';
         },
-        // Error callback - GPS failed
         (error) => {
             gpsStatusText.textContent = 'GPS: Error - ' + error.message;
         }
     );
 } else {
-    // Browser doesn't support GPS
     gpsStatusText.textContent = 'GPS: Not supported';
 }
 
+// Set initial UI state
+stopBtn.disabled = true;
+strokeRateLabel.textContent = 'Stroke Rate (GPS)';
+
 /* =============================================================================
- * MOTION SENSOR FUNCTIONS - Real accelerometer implementation
+ * MOTION SENSOR FUNCTIONS
  * ============================================================================= */
 
 /**
  * Request permission to use device motion sensors
- * Different handling for iOS vs Android
  */
 function requestMotionPermission() {
+    console.log('requestMotionPermission called');
+    
+    if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
+        console.log('iOS device detected, requesting motion permission...');
+        DeviceMotionEvent.requestPermission()
+            .then(permission => {
+                if (permission === 'granted') {
+                    SensorModel.enableMotion();
+                    setupMotionListeners();
+                    console.log('Motion permission granted on iOS');
+                    alert('Motion sensors enabled! Start a workout to use real stroke detection.');
+                } else {
+                    console.log('Motion permission denied on iOS');
+                    alert('Motion permission denied. Will use simulated stroke rate.');
+                }
+            })
+            .catch(error => {
+                console.log('Error requesting motion permission:', error);
+                alert('Error enabling motion sensors: ' + error.message);
+            });
+    } else if ('DeviceMotionEvent' in window) {
+        SensorModel.enableMotion();
+        setupMotionListeners();
+        console.log('Motion sensors available (Android or older iOS)');
+        alert('Motion sensors enabled! Start a workout to use real stroke detection.');
+    } else {
+        console.log('Motion sensors not supported by this browser');
+        alert('Motion sensors not supported by your browser. Will use simulated stroke rate.');
+    }
+}
+
+/**
+ * Set up motion sensor event listeners
+ */
+function setupMotionListeners() {
+    window.addEventListener('devicemotion', handleDeviceMotion);
+    console.log('Motion event listeners set up');
+}
+
+/**
+ * Process accelerometer data for stroke detection
+ */
+function handleDeviceMotion(event) {
+    if (!WorkoutModel.isRunning || !SensorModel.isMotionEnabled()) return;
+    
+    const acceleration = event.accelerationIncludingGravity;
+    if (!acceleration || acceleration.x === null) return;
+    
+    const timestamp = Date.now();
+    const magnitude = Math.sqrt(
+        Math.pow(acceleration.x || 0, 2) +
+        Math.pow(acceleration.y || 0, 2) +
+        Math.pow(acceleration.z || 0, 2)
+    );
+    
+    SensorModel.addAcceleration(magnitude, timestamp);
+    detectStroke(magnitude, timestamp);
+}
+
+/**
+ * Analyze acceleration data to detect rowing strokes
+ */
+function detectStroke(magnitude, timestamp) {
+    const recentData = SensorModel.getRecentAcceleration(20);
+    if (recentData.length < 20) return;
+    
+    const avgMagnitude = SensorModel.getAverageAcceleration();
+    const threshold = avgMagnitude + 4;
+    
+    if (magnitude > threshold && SensorModel.getTimeSinceLastStroke(timestamp) > 800) {
+        SensorModel.recordStrokeDetection(timestamp);
+        
+        const windowSize = 10000;
+        const recentStrokes = SensorModel.accelerationHistory.filter(
+            a => a.timestamp > timestamp - windowSize && a.magnitude > (avgMagnitude + 3)
+        ).length;
+        
+        const strokeRate = Math.round((recentStrokes / (windowSize / 1000)) * 60);
+        const cappedRate = Math.min(strokeRate, 40);
+        
+        SensorModel.setMotionStrokeRate(cappedRate);
+        WorkoutModel.addStroke(cappedRate, timestamp);
+        
+        console.log(`✓ Stroke detected! Total: ${WorkoutModel.strokeCount}, Current Rate: ${cappedRate} SPM`);
+    }
+}
+
+/* =============================================================================
+ * MAIN WORKOUT CONTROL FUNCTIONS
+ * ============================================================================= */
+
+/**
+ * Starts a new workout session
+ */
+function startWorkout() {
+    console.log('startWorkout called');
+    
+    if (WorkoutModel.isRunning) return;
+    
+    WorkoutModel.start();
+    
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+    document.getElementById('workoutSummary').style.display = 'none';
+    
+    const selectedMethod = document.getElementById('strokeRateMethod').value;
+    if (selectedMethod === 'gps' || selectedMethod === 'both') {
+        if ('geolocation' in navigator) {
+            WorkoutModel.watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                (error) => {
+                    console.log('GPS error code:', error.code);
+                    console.log('GPS error message:', error.message);
+                    
+                    if (error.code === 1) {
+                        console.log('GPS Error: Permission denied by user');
+                        gpsStatusText.textContent = 'GPS: Permission denied';
+                    } else if (error.code === 2) {
+                        console.log('GPS Error: Position unavailable (no signal)');
+                        gpsStatusText.textContent = 'GPS: No signal';
+                    } else if (error.code === 3) {
+                        console.log('GPS Error: Timeout waiting for position');
+                        gpsStatusText.textContent = 'GPS: Timeout';
+                    } else {
+                        gpsStatusText.textContent = 'GPS: Error - ' + error.message;
+                    }
+                },
+                {
+                    enableHighAccuracy: true,
+                    maximumAge: 1000,
+                    timeout: 10000
+                }
+            );
+        }
+        console.log('🌐 GPS tracking started for stroke rate detection');
+    } else {
+        console.log('⊗ GPS tracking disabled (using motion sensor method only)');
+    }
+    
+    updateDisplay();
+    speak('Workout started');
+    console.log('Workout started successfully');
+}
+
+/**
+ * Stops the current workout session
+ */
+function stopWorkout() {
+    if (!WorkoutModel.isRunning) return;
+    
+    console.log('⏹️ Stopping workout...');
+    
+    WorkoutModel.stop();
+    
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    
+    if (WorkoutModel.watchId) {
+        navigator.geolocation.clearWatch(WorkoutModel.watchId);
+        WorkoutModel.watchId = null;
+        console.log('🌐 GPS tracking stopped');
+    }
+    
+    if (SensorModel.isMotionEnabled()) {
+        console.log('📱 Motion sensor detection stopped');
+    }
+    
+    console.log('✓ Workout stopped successfully');
+    
+    showWorkoutSummary();
+    speak('Workout stopped');
+}
+
+/**
+ * Resets all workout data to zero
+ */
+function resetWorkout() {
+    stopWorkout();
+    
+    WorkoutModel.reset();
+    SensorModel.reset();
+    
+    strokeRateEl.textContent = '--';
+    splitEl.textContent = '--:--';
+    distanceEl.textContent = '0m';
+    elapsedTimeEl.textContent = '0:00';
+    
+    document.getElementById('workoutSummary').style.display = 'none';
+}
+
+/* =============================================================================
+ * GPS POSITION TRACKING
+ * ============================================================================= */
+
+/**
+ * Handles new GPS position data
+ */
+function updatePosition(position) {
+    if (!WorkoutModel.isRunning) return;
+    
+    const currentPos = {
+        lat: position.coords.latitude,
+        lng: position.coords.longitude,
+        timestamp: position.timestamp
+    };
+    
+    if (WorkoutModel.lastPosition) {
+        const distance = calculateDistance(WorkoutModel.lastPosition, currentPos);
+        const timeDiff = (currentPos.timestamp - WorkoutModel.lastPosition.timestamp) / 1000;
+        
+        const minDistance = 3;
+        const minSpeed = 0.5;
+        
+        if (distance > minDistance && timeDiff > 0) {
+            const speed = distance / timeDiff;
+            
+            if (speed >= minSpeed) {
+                WorkoutModel.addDistance(distance);
+                WorkoutModel.addSpeed(speed, currentPos.timestamp);
+                
+                console.log(`✓ GPS: Moved ${distance.toFixed(1)}m in ${timeDiff.toFixed(1)}s, Speed: ${speed.toFixed(2)} m/s`);
+            } else {
+                console.log(`⊗ GPS: Ignoring slow movement (${speed.toFixed(2)} m/s < ${minSpeed} m/s threshold)`);
+            }
+            
+            analyzeSpeedForStrokeRate(speed, currentPos.timestamp);
+            
+        } else if (distance > 0) {
+            console.log(`⊗ GPS: Ignoring small movement (${distance.toFixed(2)}m < ${minDistance}m threshold)`);
+        }
+    } else {
+        console.log('GPS: First position acquired');
+    }
+    
+    WorkoutModel.updatePosition(currentPos);
+}
+
+/**
+ * Analyzes GPS speed patterns to estimate stroke rate
+ */
+function analyzeSpeedForStrokeRate(speed, timestamp) {
+    if (WorkoutModel.speedHistory.length < 5) return;
+    
+    const avgSpeed = WorkoutModel.getAverageSpeed();
+    const peakThreshold = avgSpeed * 1.1;
+    const isPeak = speed > peakThreshold;
+    const minTimeBetweenStrokes = 1000;
+    
+    if (isPeak && SensorModel.getTimeSinceLastPeak(timestamp) > minTimeBetweenStrokes) {
+        SensorModel.addSpeedPeak(speed, timestamp);
+        const gpsRate = SensorModel.calculateGPSStrokeRate();
+        SensorModel.setGPSStrokeRate(gpsRate);
+        
+        console.log(`🌊 GPS Stroke: Peak detected! Speed: ${speed.toFixed(2)} m/s, Calculated rate: ${gpsRate} SPM`);
+    }
+}
+
+/**
+ * Calculates distance between two GPS coordinates using Haversine formula
+ */
+function calculateDistance(pos1, pos2) {
+    const R = 6371000;
+    const dLat = (pos2.lat - pos1.lat) * Math.PI / 180;
+    const dLng = (pos2.lng - pos1.lng) * Math.PI / 180;
+    
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(pos1.lat * Math.PI / 180) * Math.cos(pos2.lat * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    
+    return R * c;
+}
+
+/* =============================================================================
+ * DISPLAY UPDATE LOOP
+ * ============================================================================= */
+
+/**
+ * Main display update function
+ */
+function updateDisplay() {
+    if (!WorkoutModel.isRunning) return;
+    
+    const elapsed = WorkoutModel.getElapsedTime();
+    
+    elapsedTimeEl.textContent = formatTime(elapsed);
+    distanceEl.textContent = Math.round(WorkoutModel.totalDistance) + 'm';
+    
+    const split = WorkoutModel.getSplit500m();
+    if (split > 0) {
+        splitEl.textContent = formatTime(split);
+    }
+    
+    updateStrokeRate(elapsed);
+    handleAudioAnnouncements(elapsed);
+    
+    if (WorkoutModel.isRunning) {
+        setTimeout(updateDisplay, 100);
+    }
+}
+
+/**
+ * Updates stroke rate display
+ */
+function updateStrokeRate(elapsed) {
+    if (!WorkoutModel.isRunning) return;
+    
+    const selectedMethod = document.getElementById('strokeRateMethod').value;
+    
+    if (selectedMethod === 'gps') {
+        const gpsRate = SensorModel.getGPSStrokeRate();
+        if (gpsRate > 0) {
+            strokeRateEl.textContent = gpsRate;
+            
+            const logMsg = `📊 Display: Showing GPS-based stroke rate: ${gpsRate} SPM`;
+            if (Math.floor(elapsed) % 5 === 0 && WorkoutModel.lastLogMessage !== logMsg) {
+                console.log(logMsg);
+                WorkoutModel.lastLogMessage = logMsg;
+            }
+        } else {
+            strokeRateEl.textContent = '--';
+            
+            const logMsg = '📊 Display: GPS mode, waiting for speed patterns...';
+            if (WorkoutModel.lastLogMessage !== logMsg) {
+                console.log(logMsg);
+                WorkoutModel.lastLogMessage = logMsg;
+            }
+        }
+        return;
+    }
+    
+    if (selectedMethod === 'motion') {
+        if (SensorModel.isMotionEnabled()) {
+            const motionRate = SensorModel.getMotionStrokeRate();
+            if (motionRate > 0) {
+                strokeRateEl.textContent = motionRate;
+                
+                const logMsg = `📊 Display: Showing motion-based stroke rate: ${motionRate} SPM`;
+                if (Math.floor(elapsed) % 5 === 0 && WorkoutModel.lastLogMessage !== logMsg) {
+                    console.log(logMsg);
+                    WorkoutModel.lastLogMessage = logMsg;
+                }
+            } else {
+                strokeRateEl.textContent = '--';
+                
+                const logMsg = '📊 Display: Motion sensor active, waiting for strokes...';
+                if (WorkoutModel.lastLogMessage !== logMsg) {
+                    console.log(logMsg);
+                    WorkoutModel.lastLogMessage = logMsg;
+                }
+            }
+        } else {
+            strokeRateEl.textContent = 'Enable Motion';
+            
+            const logMsg = '📊 Display: Motion sensors not enabled';
+            if (WorkoutModel.lastLogMessage !== logMsg) {
+                console.log(logMsg);
+                WorkoutModel.lastLogMessage = logMsg;
+            }
+        }
+        return;
+    }
+    
+    if (selectedMethod === 'both') {
+        const gpsRate = SensorModel.getGPSStrokeRate();
+        const motionRate = SensorModel.getMotionStrokeRate();
+        const gpsDisplay = gpsRate > 0 ? gpsRate : '--';
+        const motionDisplay = (SensorModel.isMotionEnabled() && motionRate > 0) ? motionRate : '--';
+        
+        strokeRateEl.innerHTML = `<span style="font-size:0.7em">GPS:</span>${gpsDisplay} <span style="font-size:0.7em">/ MOT:</span>${motionDisplay}`;
+        
+        const logMsg = `📊 Display: Comparison - GPS: ${gpsDisplay} SPM, Motion: ${motionDisplay} SPM`;
+        if (Math.floor(elapsed) % 5 === 0 && WorkoutModel.lastLogMessage !== logMsg) {
+            console.log(logMsg);
+            WorkoutModel.lastLogMessage = logMsg;
+        }
+        return;
+    }
+}
+
+/**
+ * Changes stroke rate detection method
+ */
+function changeStrokeRateMethod() {
+    const method = document.getElementById('strokeRateMethod').value;
+    SensorModel.setStrokeRateMethod(method);
+    
+    const label = document.getElementById('strokeRateLabel');
+    if (method === 'gps') {
+        label.textContent = 'Stroke Rate (GPS)';
+    } else if (method === 'motion') {
+        label.textContent = 'Stroke Rate (Motion)';
+    } else {
+        label.textContent = 'Stroke Rate (Both)';
+    }
+    
+    console.log(`⚙️ Stroke rate method changed to: ${method}`);
+    
+    if (method === 'motion' && !SensorModel.isMotionEnabled()) {
+        alert('Motion sensors not enabled. Click "Enable" button first.');
+    }
+}
+
+/* =============================================================================
+ * AUDIO ANNOUNCEMENTS
+ * ============================================================================= */
+
+/**
+ * Handles periodic audio announcements
+ */
+function handleAudioAnnouncements(elapsed) {
+    const strokeRateInterval = parseInt(document.getElementById('strokeRateInterval').value);
+    const splitInterval = parseInt(document.getElementById('splitInterval').value);
+    
+    if (strokeRateInterval > 0 && elapsed - WorkoutModel.lastStrokeRateAnnounce >= strokeRateInterval) {
+        const currentRate = strokeRateEl.textContent;
+        if (currentRate !== '--' && currentRate !== 'Enable Motion') {
+            speak(`Stroke rate ${currentRate}`);
+            WorkoutModel.lastStrokeRateAnnounce = elapsed;
+            console.log(`🔊 Audio: Announced current stroke rate ${currentRate} SPM`);
+        }
+    }
+    
+    if (splitInterval > 0 && elapsed - WorkoutModel.lastSplitAnnounce >= splitInterval) {
+        const currentSplit = splitEl.textContent;
+        if (currentSplit !== '--:--') {
+            const splitParts = currentSplit.split(':');
+            speak(`Split ${splitParts[0]} minutes ${splitParts[1]} seconds`);
+            WorkoutModel.lastSplitAnnounce = elapsed;
+            console.log(`🔊 Audio: Announced split time ${currentSplit}`);
+        }
+    }
+}
+
+/**
+ * Speaks text using browser's text-to-speech
+ */
+function speak(text) {
+    if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = parseFloat(document.getElementById('voiceSpeed').value);
+        utterance.volume = 0.8;
+        speechSynthesis.speak(utterance);
+    }
+}
+
+/* =============================================================================
+ * UTILITY FUNCTIONS
+ * ============================================================================= */
+
+/**
+ * Formats time in seconds to MM:SS format
+ */
+function formatTime(seconds) {
+    const minutes = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${minutes}:${secs.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Shows workout summary after workout ends
+ */
+function showWorkoutSummary() {
+    const summary = WorkoutModel.getSummary();
+    
+    document.getElementById('summaryDistance').textContent = summary.distance + 'm';
+    document.getElementById('summaryTime').textContent = formatTime(summary.time);
+    document.getElementById('summaryAvgStrokeRate').textContent = summary.avgStrokeRate;
+    
+    if (summary.avgSplit > 0) {
+        document.getElementById('summaryAvgSplit').textContent = formatTime(summary.avgSplit);
+    }
+    
+    document.getElementById('workoutSummary').style.display = 'block';
+
     console.log('requestMotionPermission called');
     
     // For iOS 13+ devices
