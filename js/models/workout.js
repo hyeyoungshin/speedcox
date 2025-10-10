@@ -175,3 +175,5 @@ const WorkoutModel = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = WorkoutModel;
 }
+
+export default WorkoutModel;

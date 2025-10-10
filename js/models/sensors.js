@@ -217,3 +217,5 @@ const SensorModel = {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SensorModel;
 }
+
+export default SensorModel;
