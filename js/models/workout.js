@@ -171,9 +171,5 @@ const WorkoutModel = {
     }
 };
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = WorkoutModel;
-}
-
+// ES6 module export  
 export default WorkoutModel;

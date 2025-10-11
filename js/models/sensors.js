@@ -213,9 +213,5 @@ const SensorModel = {
     }
 };
 
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = SensorModel;
-}
-
+// ES6 module export
 export default SensorModel;
